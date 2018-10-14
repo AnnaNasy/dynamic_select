@@ -1,0 +1,28 @@
+#! /bin/bash
+#
+# 此脚本的是初始化代理服务器环境，作用是开机自动启动nginx服务和memcached服务以及handle模块
+# 
+
+#set -e #如果出错，停止执行
+SERVER_IP="192.168.128.128"
+
+cmd_nginx=$(pgrep -c nginx)
+
+if [[ $cmd_nginx -lt 1 ]]
+then
+    sudo nohup /usr/local/nginx/sbin/nginx > /tmp/nginx.log 2>&1 &
+fi
+
+cmd_mem=$(pgrep -c memcached)
+
+if [[ $cmd_mem -lt 1 ]]
+then
+    nohup /usr/local/memcache/bin/memcached -d -l ${SERVER_IP} -p 10240 -m 10 -u root -c 65535 > /tmp/memcache.log 2>&1 &
+fi
+
+#cmd_handle=$(ps aux |grep handle_infos |grep -v grep -c)
+
+#if [[ $cmd_handle -lt 1 ]]
+#then
+#    nohup python3 /home/aijialin/handleModule/handle_infos.py > /tmp/handle.log 2>&1 &
+#fi

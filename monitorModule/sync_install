@@ -1,0 +1,11 @@
+#! /bin/bash
+
+server_arr=(
+		"192.168.128.132"
+		"192.168.128.133"
+)
+linux_user=`whoami`
+for ser in ${server_arr[@]};
+do
+		rsync -vlre "ssh -p22" /home/${linux_user}/monitorModule ${linux_user}@${ser}:/home/${linux_user}/
+done

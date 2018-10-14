@@ -1,0 +1,163 @@
+#! /usr/bin/python3
+# encoding=utf-8
+# 
+
+__author__	= "aijialin"
+__date__	= "2018-07-08"
+
+############################
+'''
+使用siege模拟负载测试，并且根据结果自动绘图
+'''
+############################
+
+import os, csv, time, sys, subprocess, shlex
+from config import *
+from multiprocessing import Process
+try:
+	import matplotlib.pyplot as plt
+	from pylab import *  
+	mpl.rcParams['font.sans-serif'] = ['SimHei']
+except:
+	print("[warning] matplotlib module not found")
+
+class Siege():
+	req = X_REQ
+	url = URL
+	def __init__(self):
+		csv_file = getCSV_FILE()
+		print("csv_file = ", csv_file)
+		if os.path.exists(csv_file):
+			os.remove(csv_file)
+
+	def request(self):
+		fenge = "**"*30 + "\n"
+		for r in self.req:
+			max_fail_output = None
+			n = 5 #单条命令最大执行次数
+			while n:
+				cmd_str = "siege -c%d -r5 %s" % (r, self.url)
+				cmd = shlex.split(cmd_str)
+				pp = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				print("执行 %s" % cmd_str)
+				output = parse_output(pp.communicate())
+				cur_availability = float(output["Availability"].split()[0])
+				if cur_availability < 99.00:
+					if not max_fail_output: max_fail_output = output
+					elif cur_availability > float(max_fail_output["Availability"].split()[0]):
+						max_fail_output = output
+					n -= 1 # 4 3 2 1 0
+					sltime = r/100 + 15*(5-n)
+					#sltime = 1
+					if n != 0:
+						print("siege %d 出错 Availability = %s sleep %d 秒后 进行第[%d/5]次重试" % (r, output["Availability"], sltime, 5-n+1))
+					elif r == self.req[-1]: #最后一次不需要sleep
+						print("siege %d 5次出错 Availability = %s " % (r, max_fail_output["Availability"]))
+						write_output(max_fail_output)
+						break;
+					else:
+						print("siege %d 5次出错 Availability = %s sleep %d 秒后 进行下一个任务 " % (r, max_fail_output["Availability"], sltime))
+						print(fenge)
+						write_output(max_fail_output)
+					time.sleep(sltime) #如果出错，sleep
+					continue
+				else:
+					write_output(output)
+					if r == self.req[-1]: #最后一次不需要sleep
+						print("siege %d 成功 Availability = %s " % (r, output["Availability"]))
+						break
+					else:
+						sltime = r/100
+						print("siege %d 成功 Availability = %s sleep %d 秒后 进行下一个任务" % (r, output["Availability"], sltime))
+						print(fenge)
+						time.sleep(sltime) #每次发送完请求都要sleep
+						break
+				
+
+class Read():
+	x_data = []
+	y_data = []
+	def __init__(self):
+		pass
+
+	def read_log(self, col_name):
+
+		return read_csv_by_col(col_name)
+
+
+class Draw():
+	x_req = X_REQ
+	x_lable = "并发数"
+	y_lable = "请求时间"
+	title = "默认表名"
+	def __init__(self, x_lable=None, y_lable=None, title=None):
+		if not x_lable: self.set_xlable(self.x_lable)
+		if not y_lable: self.set_ylable(self.y_lable)
+		if not title: self.set_title(self.title)
+
+	def set_xlable(self, lable):
+		self.x_lable = lable
+		plt.xlabel(self.x_lable)
+
+	def set_ylable(self, lable):
+		self.y_lable = lable
+		plt.ylabel(self.y_lable)
+
+	def set_title(self, title):
+		self.title = title
+		plt.title(self.title)
+
+	def draw(self, data):
+		if not isinstance(data, dict):
+			raise TypeError('Draw data need dict')
+		for k, v in data.items():
+			self.draw_line_diagram(k, v[0], v[1])
+
+	def show(self):
+		plt.legend()
+		plt.show()
+
+	def draw_line_diagram(self, lable, x_data, y_data):
+		plt.plot(x_data, y_data, label=lable)
+
+
+
+
+def draw_grapy(item, title):
+
+	reader = Read()
+	drawer = Draw()
+	for f in sys.argv[1:]: #读取每一种方法的文件
+		if f not in ARGS: 
+			print("[warning] %s not in %s" % (f, str(ARGS)))
+			continue
+		else: 
+			generator_csv_file(f)
+			data = reader.read_log(item)
+			print(data)
+			drawer.set_ylable(title)
+			drawer.set_title(title)
+			drawer.draw(data)
+	drawer.show()
+
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		print("Usage: ./sieges %s" % str(ARGS))
+		exit()
+
+	if os.name != "nt": #linux 在lixnu下生成文件
+		if sys.argv[1] not in ARGS: 
+			print("Error argv1 must be one of %s" % str(ARGS))
+			exit()
+		generator_csv_file(sys.argv[1])
+		ss = Siege()
+		ss.request()
+	else:				#windows 在windows下读文件并绘图
+		reader = Read()
+		write_excel(reader)
+		for k, v in RECORD_ITEM.items():
+			pp = Process(target=draw_grapy, args=(k, v))
+			pp.start()
+
+

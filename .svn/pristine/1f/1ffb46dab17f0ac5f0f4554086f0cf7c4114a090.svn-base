@@ -1,0 +1,10 @@
+#! /bin/bash
+
+server_arr=(
+		"192.168.128.132"
+		"192.168.128.133"
+)
+for ser in ${server_arr[@]};
+do
+		rsync -vlre "ssh -p22" /home/aijialin/monitorModule aijialin@${ser}:/home/aijialin/
+done

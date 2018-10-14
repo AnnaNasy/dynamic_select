@@ -1,0 +1,7 @@
+import memcache
+
+conn = memcache.Client(["192.168.128.128:10240"], debug=True)
+
+print(conn)
+
+

@@ -1,0 +1,60 @@
+#! /usr/local/bin/python3
+# -*- coding:utf-8 -*-
+
+import time, json
+from config import *
+
+
+def calculation_score():
+	best_server_name = ""
+	best_server_score = 0
+
+	for server_flag in UPSTREAM_SERVER_FLAGS:
+		if server_flag not in INFOS:
+			continue
+		cpu_left = 100 - INFOS[server_flag]["cpu_usage"]
+		mem_left = 100 - INFOS[server_flag]["mem_usage"]
+		net_left = 100 - INFOS[server_flag]["net_usage"]
+		INFOS[server_flag]["sorce"] = 100*(0.3*cpu_left + 0.4*mem_left + 0.3*net_left)
+		print("server %s is sorce is %f" % (UPSTREAM_SERVER_FLAGS[server_flag], INFOS[server_flag]["sorce"]))
+		if INFOS[server_flag]["sorce"] > best_server_score:
+			best_server_score = INFOS[server_flag]["sorce"]
+			best_server_name = server_flag
+
+
+	if best_server_name:
+		BEST_SELECT_IP = UPSTREAM_SERVER_FLAGS[best_server_name] #返回一个ip
+		print("BEST_SELECT_IP = %s" % BEST_SELECT_IP)
+		return BEST_SELECT_IP
+
+
+def handle_infos():
+	for server_flag in UPSTREAM_SERVER_FLAGS:
+		if MEMCACHE_CONN.get(server_flag): #非阻塞，如果没有get到立即返回None
+			INFOS[server_flag] = json.loads(MEMCACHE_CONN.get(server_flag))
+			print("从%s读到信息%s" % (UPSTREAM_SERVER_FLAGS[server_flag], INFOS[server_flag]))
+			time_stamp = "%s_pre_time" % server_flag
+			if INFOS[server_flag]["time_stamp"] == INFOS[time_stamp]:
+				print("从%s读到的信息没有变化" % UPSTREAM_SERVER_FLAGS[server_flag])
+				INFOS.pop(server_flag)
+			else:
+				INFOS[time_stamp] = INFOS[server_flag]["time_stamp"]
+		else:
+			print("没有从%s读到信息", UPSTREAM_SERVER_FLAGS[server_flag])
+			if server_flag in INFOS:
+				INFOS.pop(server_flag)
+			
+	#print(INFOS)
+	BEST_SELECT_IP = calculation_score()
+	if BEST_SELECT_IP:
+		print("set best ip = %s" % BEST_SELECT_IP)
+		MEMCACHE_CONN.set(BEST_LOAD_IP_KEY, BEST_SELECT_IP)
+			
+
+if __name__ == "__main__":
+	while 1:
+		handle_infos()
+		time.sleep(2)
+
+
+			

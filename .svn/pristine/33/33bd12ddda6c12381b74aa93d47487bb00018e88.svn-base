@@ -1,0 +1,92 @@
+# 基于Nginx的负载均衡
+## handel模块
+
+## monitor模块
+
+## calc模块
+
+## ngx_dyn_select模块
+
+## 利用memcache实时更新数据
+
+### 安装软件  
+
+在负载机器上安装memcache服务  
+
+1. memcache需要libevent库支持  
+> wget https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz  
+tar -zxvf libevent-2.1.8-stable.tar.gz  
+cd libevent-2.1.8-stable  
+./configure -prefix=/usr/local/memcache/libevent  
+make && make install  
+
+2. 下载并安装memcache服务  
+> wget https://memcached.org/latest   
+tar -zxvf memcached-1.5.7.tar.gz  
+cd memcached-1.5.7  
+./configure -prefix=/usr/local/memcache -with-libevent=/usr/local/memcache/libevent  
+make && make install  
+
+启动memcached
+> /usr/local/memcache/bin/memcached -d -l 192.168.128.128 -p 10240 -m 10 -u root -c 65535 
+```
+-d选项是启动一个守护进程，
+-m是分配给Memcache使用的内存数量，单位是MB，这里是10MB，
+-u是运行Memcache的用户，这里是root，
+-l是监听的服务器IP地址，如果有多个地址的话，这里指定了服务器的IP地址192.168.128.128，
+-p是设置Memcache监听的端口，这里设置了10240，最好是1024以上的端口，
+-c选项是最大运行的并发连接数，默认是1024，这里设置了65535，按照服务器的负载量来设定，
+-P是设置保存Memcache的pid文件，我这里是保存在 /tmp/memcached.pid，也可以启动多个守护进程，不过端口不能重复。
+```
+
+查看memcache是否正常启动  
+> sudo netstat -aptn |grep memcache
+
+客户端连接测试(使用telnet)  
+> telnet 192.168.128.128 10240
+能连接上，说明memcache成功启用，可使用stats命令查看当前状态  
+
+
+
+安装python memcache客户端 
+> wget https://files.pythonhosted.org/packages/90/59/5faf6e3cd8a568dd4f737ddae4f2e54204fd8c51f90bf8df99aca6c22318/python-memcached-1.59.tar.gz  
+tar -zxvf python-memcached-1.59.tar.gz  
+cd python-memcached-1.59  
+python setup.py build  
+sudo python setup.py install  
+
+这里可能会提示出错  
+```
+aijialin@ubuntu:~/python-memcached-1.58$ python3 setup.py build
+Traceback (most recent call last):
+  File "setup.py", line 3, in <module>
+    from setuptools.depends import get_module_constant
+ImportError: No module named 'setuptools'
+```
+需要先安装setuptools模块  
+> wget http://distfiles.macports.org/py-setuptools/setuptools-2.0.tar.gz  
+tar -zxvf setuptools-2.0.tar.gz  
+cd setuptools-2.0  
+python setup.py build  
+sudo python setup.py install  
+
+[python3 操作memcache](https://www.cnblogs.com/wang-yc/p/5693268.html)
+
+
+安装C/C++ memcache客户端 [libmemcached](https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz)
+> wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz  
+tar -zxvf libmemcached-1.0.18.tar.gz  
+cd libmemcached-1.0.18  
+./configure
+make && make install  
+
+libmemcached 默认安装在/usr/local/,头文件安装在/usr/local/include/libmemcachde/,动态库默认安装在/usr/local/lib/下。 
+
+编译的时候需要加上-lmemcached，如果执行时报错
+> error while loading shared libraries: libmemcached.so.11: cannot open shared object file: No such file or directory  
+
+执行 sudo ln -s /usr/local/lib/libmemcached.so.11 /usr/lib/
+
+
+
+

@@ -1,0 +1,74 @@
+# encoding=utf-8
+import os, csv
+
+CSV_FILE = ""
+MODE = ""
+
+def generator_csv_file(mode):
+	global CSV_FILE, MODE
+	MODE = mode
+	if os.name != "nt": #win
+		WORK_PATH 	= 	os.getcwd()
+		CSV_FILE	=	"%s%s%s.log" % (WORK_PATH, "/sieges_output_", mode)
+	else:
+		WORK_PATH 	= 	os.getcwd()
+		CSV_FILE 	= 	"%s%s%s.log" % (WORK_PATH, "\\sieges_output_", mode)
+	#return CSV_FILE
+	print(CSV_FILE)
+
+
+'''
+在Linux下安装matplotlib
+1. 下载matploat 
+2. 安装依赖freetype, png
+'''
+
+URL = "192.168.128.128/index.php"
+#URL = "192.168.128.128"
+#X_REQ = [100, 200, 400, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+X_REQ = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+#X_REQ = [100]
+RECORD_ITEM = {"Response time": "请求时间(sec)", "Transaction rate": "传输率(trans/sec)", "Throughput": "吞吐量(MB/sec)"}
+ARGS	=	["rr", "dyn", "ip"]
+
+def write_output(datas):
+	if not isinstance(datas, dict):
+		raise TypeError("write_output need arg dict")
+	headers = []
+	for k in datas:
+		headers.append(k)
+	data = [datas]
+
+	if not os.path.exists(CSV_FILE):
+		with open(CSV_FILE, 'w', newline='') as f:
+			writer = csv.DictWriter(f, headers)
+			writer.writeheader()
+
+	with open(CSV_FILE, 'a', newline='') as f:
+		writer = csv.DictWriter(f, headers)
+		writer.writerows(data)
+
+def parse_output(data):
+	if not isinstance(data, tuple):
+		raise TypeError("parse_output need arg tuple")
+	#print(data)
+	dic = {}
+	msg_arr = data[1].decode('utf-8').strip().split("\n")[-12:]
+	
+	for v in msg_arr:
+		line_arr = v.split(":")
+		dic[line_arr[0].strip()] = line_arr[1].strip()
+
+	return dic
+
+def read_csv_by_col(col_name):
+	y_data = []
+	with open(CSV_FILE,'r') as myFile:  
+		lines = csv.DictReader(myFile)
+		for line in lines:
+			y_data.append(float(line[col_name].split()[0]))
+		data = {MODE: [X_REQ, y_data]}
+		return data
+
+def getCSV_FILE():
+	return CSV_FILE

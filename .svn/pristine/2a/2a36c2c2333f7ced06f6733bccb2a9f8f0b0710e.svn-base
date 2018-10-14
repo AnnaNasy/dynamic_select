@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <stdlib.h>  
+#include <time.h>  
+#include <unistd.h>  
+#include <libmemcached/memcached.h>
+
+
+int query_ip() {  
+    memcached_st *memc;  
+    memcached_return_t rc;  
+    memcached_server_st *server;  
+
+    time_t expiration = 0;  
+    uint32_t flags = 0;  
+
+    memc = memcached_create(NULL);  /*失败返回NULL*/
+    if (memc == NULL) {
+        printf("memcached_create error");
+        return -1;
+    }
+    server = memcached_server_list_append(NULL, (char*)"192.168.128.128", 10240, &rc);
+    if (MEMCACHED_SUCCESS != rc) {
+        printf("memcached_server_list_append error\n");
+        return -2;
+    }
+
+    rc = memcached_server_push(memc, server);
+    if (MEMCACHED_SUCCESS != rc) {
+        printf("memcached_server_push error\n");
+        return -3;
+    }
+    memcached_server_list_free(server);  
+
+    const char *key = "ngx_test_key";  //best_server_ip
+    const char *value = "aijialin_zhangna";  
+
+    size_t keylen = strlen(key);  
+    size_t valuelen = strlen(value);  
+
+    rc = memcached_set(memc, key, keylen, value, valuelen, expiration, flags);  
+
+    if(MEMCACHED_SUCCESS == rc) {  
+        printf("Save data:%s successfully\n", value);  
+    } else {
+        printf("memcached_set error %x\n", rc);
+        return -4;
+    }
+
+    char *result = memcached_get(memc, key, keylen, &valuelen, &flags, &rc);  
+    if(MEMCACHED_SUCCESS == rc) {  
+        printf("Get value:%s successfully\n", result);  
+    } else {
+        printf("memcached_get error\n");
+        return -5;
+    }  
+
+    memcached_free(memc);  
+    return 0;  
+}
+
+int main() {
+    int ret = query_ip();
+    return ret;
+}

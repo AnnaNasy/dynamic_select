@@ -1,0 +1,22 @@
+<?php
+	/**1. 生成1000个0~10000之间整数，放到数组里 一个整数4B * 1000 = 4K 模拟每个请求消耗4K内存
+	 * 2. 排序，求和. 对1000个整数排序，然后求和，模拟CPU计算负载。
+	 * 3. 返回结果 模拟网络和磁盘消耗。
+	 */
+	$nums = array();
+	for ( $i = 0; $i < 1000; $i++ ) {
+		$num = rand(0, 10000);
+		array_unshift($nums, $num);
+		echo $num;
+		echo " ";
+	}
+	echo "</br>";
+	sort($nums);
+	/*
+	for ( $i = 0; $i < 1000; $i++ ) {
+		echo $nums[$i];
+		echo " ";
+	}
+	*/
+	echo "计算结果为：" . array_sum($nums);
+	

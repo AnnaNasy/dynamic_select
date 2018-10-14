@@ -1,0 +1,27 @@
+#! /bin/bash
+#
+# 此脚本的是初始上游服务器环境，作用是开机自动启动nginx服务和php-fpm服务以及monitor模块
+# 
+
+#set -e #如果出错，停止执行
+
+cmd_nginx=$(pgrep -c nginx)
+
+if [[ $cmd_nginx -lt 1 ]]
+then
+    sudo nohup /usr/local/nginx/sbin/nginx > /tmp/nginx.log 2>&1 &
+fi
+
+cmd_php_fpm=$(pgrep -c php-fpm)
+
+if [[ $cmd_php_fpm -lt 1 ]]
+then
+    nohup /usr/local/php/sbin/php-fpm > /tmp/php_fpm.log 2>&1 &
+fi
+
+#cmd_monitor=$(ps aux |grep server_monitor |grep -v grep -c)
+
+#if [[ $cmd_monitor -lt 1 ]]
+#then
+#    nohup python3 /home/aijialin/monitorModule/server_monitor.py > /tmp/monitor.log 2>&1 &
+#fi

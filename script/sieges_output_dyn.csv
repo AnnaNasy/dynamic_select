@@ -1,0 +1,11 @@
+Throughput,Data transferred,Availability,Successful transactions,Shortest transaction,Transaction rate,Concurrency,Transactions,Elapsed time,Failed transactions,Response time,Longest transaction
+0.48 MB/sec,3.79 MB,100.00 %,500,0.02,63.37 trans/sec,55.22,500 hits,7.89 secs,0,0.87 secs,6.29
+0.57 MB/sec,7.59 MB,100.00 %,1000,0.02,75.47 trans/sec,106.88,1000 hits,13.25 secs,0,1.42 secs,7.56
+0.89 MB/sec,11.38 MB,100.00 %,1500,0.02,117.28 trans/sec,194.58,1500 hits,12.79 secs,0,1.66 secs,8.41
+0.97 MB/sec,15.17 MB,100.00 %,2000,0.02,127.55 trans/sec,257.28,2000 hits,15.68 secs,0,2.02 secs,15.19
+0.74 MB/sec,18.96 MB,100.00 %,2500,0.02,97.92 trans/sec,241.08,2500 hits,25.53 secs,0,2.46 secs,18.26
+0.93 MB/sec,22.76 MB,100.00 %,3000,0.02,123.15 trans/sec,372.91,3000 hits,24.36 secs,0,3.03 secs,20.57
+0.98 MB/sec,26.55 MB,100.00 %,3500,0.02,129.73 trans/sec,399.20,3500 hits,26.98 secs,0,3.08 secs,25.88
+1.11 MB/sec,30.34 MB,100.00 %,4000,0.02,145.83 trans/sec,530.32,4000 hits,27.43 secs,0,3.64 secs,23.34
+0.86 MB/sec,34.12 MB,99.96 %,4498,0.02,113.24 trans/sec,465.97,4498 hits,39.72 secs,2,4.11 secs,38.91
+0.71 MB/sec,37.88 MB,99.86 %,4993,0.02,92.96 trans/sec,498.00,4993 hits,53.71 secs,7,5.36 secs,46.87

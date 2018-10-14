@@ -1,0 +1,90 @@
+#! /usr/local/bin/python3
+# -*- coding:utf-8 -*-
+
+import time, json
+from config import *
+
+run_recore = { #第一项代表读取未变次数，第二项代表被选次数
+	"192.168.128.131" : [0, 0],
+	"192.168.128.132" : [0, 0],
+	"192.168.128.133" : [0, 0],
+}
+
+is_start = 0
+
+def write_debug():
+	for ip in upstream_server:
+		server_flag = "%s" % genearteMD5(ip)
+		if server_flag not in INFOS:
+			continue
+		info = INFOS[server_flag]
+		read_ip = UPSTREAM_SERVER_FLAGS[server_flag]
+
+		msg = '''[%s] => cpu: %.3f \tmem: %.3f \tnet: %.3f \trequest_time:%.3f \tscore:%.3f \t读未变: %d \t被选择: %d''' % (
+			read_ip, info["cpu_usage"], info["mem_usage"], info["net_usage"], info["request_time"] or 0.000, info["sorce"], run_recore[read_ip][0], run_recore[read_ip][1] 
+			)
+		print(msg)
+	print("\n")
+
+
+def calculation_score():
+	best_server_name = ""
+	best_server_score = 0
+
+	for server_flag in UPSTREAM_SERVER_FLAGS:
+		if server_flag not in INFOS:
+			continue
+		cpu_left = 100 - INFOS[server_flag]["cpu_usage"]
+		mem_left = 100 - INFOS[server_flag]["mem_usage"]
+		net_left = 100 - INFOS[server_flag]["net_usage"]
+		request_time_score = 10 / (INFOS[server_flag]["request_time"] or 0.001)
+		INFOS[server_flag]["sorce"] = (0.3*cpu_left + 0.3*mem_left + 0.4*net_left + request_time_score)
+		#INFOS[server_flag]["sorce"] = 100*(0.3*cpu_left + 0.3*mem_left + 0.4*net_left)
+
+		if INFOS[server_flag]["sorce"] > best_server_score:
+			best_server_score = INFOS[server_flag]["sorce"]
+			best_server_name = server_flag
+		
+
+	if best_server_name:
+		BEST_SELECT_IP = UPSTREAM_SERVER_FLAGS[best_server_name] #返回一个ip
+		return BEST_SELECT_IP
+
+
+def handle_infos():
+	global run_recore, is_start
+	is_start = False
+	for server_flag in UPSTREAM_SERVER_FLAGS:
+		real_ip = UPSTREAM_SERVER_FLAGS[server_flag]
+		data = MEMCACHE_CONN.get(server_flag)
+		if data: #非阻塞，如果没有get到立即返回None
+			INFOS[server_flag] = json.loads(data)
+			#print("从%s读到信息%s" % (UPSTREAM_SERVER_FLAGS[server_flag], INFOS[server_flag]))
+			time_stamp = "%s_pre_time" % server_flag
+			if INFOS[server_flag]["request_time"]: is_start = True
+			if INFOS[server_flag]["time_stamp"] == INFOS[time_stamp]:
+				run_recore[real_ip][0] += 1
+				#INFOS.pop(server_flag)
+			else:
+				INFOS[time_stamp] = INFOS[server_flag]["time_stamp"]
+		else:
+			print("没有从%s读到信息" % real_ip)
+			if server_flag in INFOS:
+				INFOS.pop(server_flag)
+		
+	#print(INFOS)
+	BEST_SELECT_IP = calculation_score()
+	write_debug()
+	if BEST_SELECT_IP and is_start:
+		print("set best ip = %s" % BEST_SELECT_IP)
+		run_recore[BEST_SELECT_IP][1] += 1
+		MEMCACHE_CONN.set(BEST_LOAD_IP_KEY, BEST_SELECT_IP)
+			
+
+if __name__ == "__main__":
+	while 1:
+		handle_infos()
+		time.sleep(0.5)
+
+
+			
