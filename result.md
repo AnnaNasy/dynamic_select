@@ -1,4 +1,4 @@
-Transactions:		        2550 hits
+Transactions:		        28888550 hits
 Availability:		      100.00 %
 Elapsed time:		       14.63 secs
 Data transferred:	      364.97 MB
